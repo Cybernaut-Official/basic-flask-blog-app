@@ -22,7 +22,7 @@ app.secret_key = "jve%hq8xpzdzdqz136-p=9p_dl5wuz0)p9nos@$&=vq#%i$8*z"
 # admin = Admin(app, name='microblog', template_mode='bootstrap3')
 
 con = sqlite3.connect("database.db")
-con.execute("create table if not exists customer(pid integer primary key,name text,createpassword text,contact integer,mail text)")
+con.execute("create table if not exists users(pid integer primary key,name text,password text,contact integer,mail text)")
 con.close()
 db = SQLAlchemy(app)
 
@@ -78,7 +78,7 @@ my_admin.add_view(BlogModelView(Blog, db.session))
 class HomeAdminView(BaseView):
     @expose('/')
     def index(self):
-        return redirect(url_for('customer'))
+        return redirect(url_for('blog'))
 
 my_admin.add_view(HomeAdminView(name='Mainpage', endpoint='mainpage'))
 
@@ -96,21 +96,21 @@ def login():
         con = sqlite3.connect("database.db")
         con.row_factory = sqlite3.Row
         cur = con.cursor()
-        cur.execute("select * from customer where name=? and createpassword=?", (name, password))
+        cur.execute("select * from users where name=? and password=?", (name, password))
         data = cur.fetchone()
 
         if data:
             session["username"] = data["name"]
-            session["password"] = data["createpassword"]
-            return redirect("customer")
+            session["password"] = data["password"]
+            return redirect("blog")
         else:
             flash("Username and Password Mismatch", "danger")
     return redirect(url_for("index"))
 
-@app.route('/customer', methods=["GET", "POST"])
-def customer():
+@app.route('/blog', methods=["GET", "POST"])
+def blog():
     blogs = Blog.query.all()
-    return render_template("customer.html",blogs=blogs)
+    return render_template("blog.html",blogs=blogs)
 
 @app.route('/register', methods=['GET', 'POST'])
 def register():
@@ -122,7 +122,7 @@ def register():
             mail = request.form['mail']
             con = sqlite3.connect("database.db")
             cur = con.cursor()
-            cur.execute("insert into customer(name,createpassword,contact,mail)values(?,?,?,?)", (name, password, contact, mail))
+            cur.execute("insert into users(name,password,contact,mail)values(?,?,?,?)", (name, password, contact, mail))
             con.commit()
             flash("Record Added Successfully", "success")
             return redirect(url_for("index"))
