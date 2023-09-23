@@ -1,0 +1,8 @@
+version: '3'
+services:
+  web:
+    build:
+      context: .
+    image: cybernaut/flask-blog
+    ports:
+      - "8000:8000"
