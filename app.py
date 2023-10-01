@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, flash, redirect, url_for, session
+from flask import Flask, render_template, abort, request, flash, redirect, url_for, session
 from flask_admin import Admin, AdminIndexView
 from flask_admin import BaseView, expose
 from wtforms import form, fields, validators
@@ -6,6 +6,8 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_admin.contrib.sqla import ModelView
 from functools import wraps
 import sqlite3
+from sqlalchemy import ForeignKey
+from sqlalchemy.orm import relationship
 
 def login_required(func):
     @wraps(func)
@@ -31,6 +33,22 @@ class Blog(db.Model):
     author = db.Column(db.String, unique=False, nullable=True)
     blog_title = db.Column(db.String, nullable=False)
     blog_content = db.Column(db.Text, nullable=False)
+    
+    category_id = db.Column(db.Integer, db.ForeignKey('category.id'))
+    
+    category = relationship('Category', back_populates='blogs')
+
+    def __repr__(self):
+        return self.name
+
+class Category(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String, nullable=False, unique=True)
+    
+    blogs = relationship('Blog', back_populates='category')
+
+    def __repr__(self):
+        return self.name
 
 class CustomAdminIndexView(AdminIndexView):
     def is_accessible(self):
@@ -44,15 +62,15 @@ class CustomAdminIndexView(AdminIndexView):
 
 my_admin = Admin(app, name='microblog', template_mode='bootstrap3', index_view=CustomAdminIndexView())
 
-class BlogForm(form.Form):
-    blog_title = fields.StringField('Blog Title',validators=[validators.DataRequired()])
-    blog_content = fields.TextAreaField('Blog Content',validators=[validators.DataRequired()])
+# class BlogForm(form.Form):
+#     blog_title = fields.StringField('Blog Title',validators=[validators.DataRequired()])
+#     blog_content = fields.TextAreaField('Blog Content',validators=[validators.DataRequired()])
 
 class BlogModelView(ModelView):
 
-    form = BlogForm 
+    column_list = ['author', 'blog_title', 'blog_content', 'category']
 
-
+    form_excluded_columns = ('author')
 
     def is_accessible(self):
         if not session.get('username'):
@@ -73,6 +91,11 @@ class BlogModelView(ModelView):
 
 
 my_admin.add_view(BlogModelView(Blog, db.session))
+
+class CategoryModelView(ModelView):
+    form_excluded_columns = ('blogs')
+
+my_admin.add_view(CategoryModelView(Category, db.session))
 
 
 class HomeAdminView(BaseView):
@@ -111,6 +134,16 @@ def login():
 def blog():
     blogs = Blog.query.all()
     return render_template("blog.html",blogs=blogs)
+
+@app.route('/category/<int:category_id>')
+def category_detail(category_id):
+    category = Category.query.get(category_id)
+    if not category:
+        abort(404)  
+
+    blog_posts = Blog.query.filter_by(category_id=category_id).all()
+
+    return render_template('category_detail.html', category=category, blog_posts=blog_posts)
 
 @app.route('/register', methods=['GET', 'POST'])
 def register():

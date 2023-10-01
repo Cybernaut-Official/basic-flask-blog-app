@@ -21,6 +21,7 @@
                 <br>
                 {{ b.blog_content }}
                 <br><br>
+                <p><a href="{{ url_for('category_detail', category_id=b.category.id) }}">{{ b.category }}</a></p>
             {% endfor %}
             </div>
             <br>

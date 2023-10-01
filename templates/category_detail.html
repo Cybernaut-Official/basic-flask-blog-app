@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Category Detail</title>
+</head>
+<body>
+    <h2>Blog Posts in the category {{ category.name }}</h2>
+    <ul>
+        {% for b in blog_posts %}
+        {{ b.blog_title }}
+        <br>
+        {{ b.author }}
+        <br>
+        {{ b.blog_content }}
+        <br><br>
+        
+        {% endfor %}
+    </ul>
+</body>
+</html>
